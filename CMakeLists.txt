@@ -23,6 +23,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 add_library(flashbev_core STATIC
     cuda/data_mover.cu
     cuda/spatial_hash.cu
+    cuda/ground_filter.cu
     # .cu 文件都加在这里
 )
 
@@ -43,6 +44,12 @@ target_link_libraries(data_SoA PRIVATE flashbev_core CUDA::cudart)
 # ==========================================
 add_executable(spatial_hash scripts/spatial_hash.cpp)
 target_link_libraries(spatial_hash PRIVATE flashbev_core CUDA::cudart)
+
+# ==========================================
+# 可执行文件 3：地面滤波独立测试 (D3)
+# ==========================================
+add_executable(ground_filter scripts/ground_filter.cpp)
+target_link_libraries(ground_filter PRIVATE flashbev_core CUDA::cudart)
 
 # ==========================================
 # 可执行文件 5：主线任务 (FlashBEV 实时感知系统)

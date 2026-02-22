@@ -7,9 +7,11 @@
 #include <cuda_runtime.h>
 #include "data_mover.h"    // 复用 D1 的 AoS->SoA
 #include "spatial_hash.h" // D2 即将实现的头文件
+#include "bev_config.h"   // BEV 参数配置
 #include "FB_utils.h"     // 统一的 CUDA 错误检查和 RAII 内存管理
 
 using namespace flashbev::utils;
+using namespace flashbev::config;
 
 int main(int argc, char **argv) {
     if (argc != 2) {
@@ -17,21 +19,10 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    // 1. 定义 BEV 物理边界参数 (长宽 50m，分辨率 0.2m)
-    // BEV坐标系直接使用激光雷达的物理坐标系，原点在雷达位置 (0,0)，X轴前向，Y轴左侧为正
-    // 物理坐标系假设雷达为原点 (0,0): X 轴前向 [-25, 25]，Y 轴左侧为正 [-25, 25]
-    const float BEV_MIN_X = -25.0f;
-    const float BEV_MAX_X =  25.0f;
-    const float BEV_MIN_Y = -25.0f;
-    const float BEV_MAX_Y =  25.0f;
-    const float BEV_RES   =   0.2f;
-    const int GRID_W = static_cast<int>((BEV_MAX_X - BEV_MIN_X) / BEV_RES); // 250
-    const int GRID_H = static_cast<int>((BEV_MAX_Y - BEV_MIN_Y) / BEV_RES); // 250
+    // 1. 定义 BEV 物理边界参数: bev_config.h
 
     try {
         // 2. 预分配 GPU 显存池
-        // 假设一帧点云不会超过 30 万个点
-        const uint32_t MAX_POINTS = 300000;
         std::cout << "[*] 正在预热显存池 (容量: " << MAX_POINTS << " 个点)...\n";
         
         // 分配 SoA 阵列空间
@@ -101,6 +92,9 @@ int main(int argc, char **argv) {
                 std::cout << "越界！[丢弃]\n";
             } else {
                 // 逆向推导其 2D 网格坐标
+                // 注意v_idx是一张表，它跟激光雷达的某一个点的关系就是索引关系，而不是说v_idx就是点云的某个坐标
+                // 是通过一一对应的索引来将激光雷达点云的坐标映射到v_idx这个表里去
+                // 再通过v_idx这个表来找到这个点云坐标对应的网格ID
                 int grid_y = v_idx / GRID_W;
                 int grid_x = v_idx % GRID_W;
                 std::cout << "GridID: " << v_idx 
