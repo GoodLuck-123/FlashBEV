@@ -4,19 +4,7 @@
 #include <cuda_runtime.h>
 #include <iostream>
 #include <stdexcept>
-
-// 极简宏：捕获 Kernel 启动和执行时的任何异步报错
-// 将来可以将其包含在一个公共的 CUDA 工具头文件中，供整个项目使用 cuda_utils.h
-#define CHECK_CUDA(call)                                                                               \
-    do                                                                                                 \
-    {                                                                                                  \
-        cudaError_t err = call;                                                                        \
-        if (err != cudaSuccess)                                                                        \
-        {                                                                                              \
-            fprintf(stderr, "[CUDA Error] %s:%d - %s\n", __FILE__, __LINE__, cudaGetErrorString(err)); \
-            exit(EXIT_FAILURE);                                                                        \
-        }                                                                                              \
-    } while (0)
+#include "FB_utils.h"     // 统一的 CUDA 错误检查和 RAII 内存管理
 
 namespace flashbev
 {

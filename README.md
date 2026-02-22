@@ -37,9 +37,9 @@ FlashBEV 的核心管线完全在 GPU 端异步执行，避免 CPU-GPU 间的显
 本项目坚持最小化依赖原则。
 
 **依赖项:**
-* CUDA Toolkit >= 11.0
-* CMake >= 3.15
-* OpenCV 4.x (仅用于最终 BEV 结果的 2D 可视化)
+* CUDA Toolkit >= 
+* CMake >= 
+* OpenCV  (仅用于最终 BEV 结果的 2D 可视化)
 
 **编译指令:**
 ```bash

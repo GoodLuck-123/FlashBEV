@@ -22,6 +22,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 # 将所有 .cu 底层算子编译成一个静态库，避免多个可执行文件重复编译
 add_library(flashbev_core STATIC
     cuda/data_mover.cu
+    cuda/spatial_hash.cu
     # .cu 文件都加在这里
 )
 
@@ -38,7 +39,13 @@ add_executable(data_SoA scripts/data_SoA.cpp)
 target_link_libraries(data_SoA PRIVATE flashbev_core CUDA::cudart)
 
 # ==========================================
-# 可执行文件 2：主线任务 (FlashBEV 实时感知系统)
+# 可执行文件 2：空间索引化独立测试 (D2)
+# ==========================================
+add_executable(spatial_hash scripts/spatial_hash.cpp)
+target_link_libraries(spatial_hash PRIVATE flashbev_core CUDA::cudart)
+
+# ==========================================
+# 可执行文件 5：主线任务 (FlashBEV 实时感知系统)
 # ==========================================
 add_executable(flashbev src/main.cpp)
 target_link_libraries(flashbev PRIVATE flashbev_core CUDA::cudart)
