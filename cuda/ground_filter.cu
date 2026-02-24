@@ -7,10 +7,11 @@
 namespace flashbev {
 
 // ==============================================================================
-// 物理级黑客技巧：手写单精度浮点数的 atomicMin
+// 手写单精度浮点数的 atomicMin
 // CUDA 硬件底层原生支持 int 的 CAS，我们通过寄存器位强转欺骗硬件，完成浮点数原子比较
 // 现代 GPU (如 RTX 5080) 会在 L2 Cache 层级处理这个请求，极大降低了显存带宽压力
 // ==============================================================================
+// __forceinline__ 强制内联，即将这个函数代码逻辑整个复制到调用他的地方，避免函数调用开销
 __device__ __forceinline__ void atomicMinFloat(float* address, float val) {
     int* address_as_int = (int*)address;
     int old = *address_as_int;
@@ -18,12 +19,15 @@ __device__ __forceinline__ void atomicMinFloat(float* address, float val) {
     
     do {
         assumed = old;
-        // 如果 val 更小，我们就准备把更小的值的位模式写入
+        // 如果 val 更小，我们就准备把更小的值的位模式写入 address_as_int
+        // assumed 和 old 是用于检测在我们准备写入之前，这个地址的值有没有被其他线程改动过的变量
         // fminf 会在寄存器级极速比较出更小的浮点数
         // __float_as_int 和 __int_as_float 只是编译器层面的重解释转换，0 时钟周期开销
+        // atomicCAS 只认识int32
         old = atomicCAS(address_as_int, assumed,
                         __float_as_int(fminf(val, __int_as_float(assumed))));
         // 如果期间有其他线程改了这个地址，old 会不等于 assumed，循环重试（无锁化自旋）
+        // 由于是无锁编程，所以会出现多进程竞争同一个地址的情况，但最终总能保证 min 的正确性
     } while (assumed != old);
 }
 
@@ -38,9 +42,12 @@ __global__ void InitMinZGridKernel(
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
 
+    // 这个核函数中 idx 关联 BEV 网格的索引，不会特别大；但是后面处理点云时数量非常大，所以用 uint32_t
     for (int idx = tid; idx < total_grids; idx += stride) {
         min_z_grid[idx] = 100.0f; // 雷达扫不到 100 米高空的地板
     }
+    // cudaMemset 虽然也能设置浮点数，但它是字节级的，效率极低
+    // 而且只能设置为 0 或 -1（全 0 或全 1 的位模式），无法满足我们初始化为 100.0f 的需求
 }
 
 // ------------------------------------------------------------------
@@ -60,6 +67,8 @@ __global__ void ComputeMinZKernel(
         // 遇到越界点 (-1) 直接跳过。由于越界点是极少数，这里的 if 造成的 Warp Divergence 影响微乎其微
         if (v_idx != -1) {
             float z = soa_z[idx];
+            // 同一个BEV网格的v_idx是不变的，其最低点高度可能被多个线程同时更新
+            // 但 atomicMinFloat 能保证最终结果是正确的最低点高度
             atomicMinFloat(&min_z_grid[v_idx], z);
         }
     }
@@ -113,10 +122,15 @@ void LaunchGroundFilter(
 
     // 1. 初始化 Grid (网格数量级别的并行)
     int total_grids = grid_w * grid_h;
+    // 下面这个算法是为了防止直接除线程数导致向下取整导致的线程不足，同时也避免了线程过多导致的资源浪费
+    // 多出来的一个跑不满的 block 会被越界处理
     int blocks_grid = (total_grids + threads - 1) / threads;
     InitMinZGridKernel<<<blocks_grid, threads, 0, cu_stream>>>(d_min_z_grid, total_grids);
 
     // 2. 收集最低点 (点云数量级别的并行)
+    // 之所以是点云数量级别的并行，是因为每个点都要处理，数量级远大于网格数量级，所以需要更多线程来压榨并行度
+    // 如果用网格数量级别，一个网格要处理天文数字的点数，会导致单线程压力过大，反而效率低下
+    // 每个线程都会知道自己负责点属于哪个网格，直接原子更新那个网格的最低点高度，完美利用 GPU 的并行计算能力和原子操作支持
     int blocks_pts = (num_points + threads - 1) / threads;
     ComputeMinZKernel<<<blocks_pts, threads, 0, cu_stream>>>(
         d_soa_z, d_voxel_index, d_min_z_grid, num_points
