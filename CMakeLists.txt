@@ -24,6 +24,7 @@ add_library(flashbev_core STATIC
     cuda/data_mover.cu
     cuda/spatial_hash.cu
     cuda/ground_filter.cu
+    cuda/occupancy_grid.cu
     # .cu 文件都加在这里
 )
 
@@ -40,16 +41,22 @@ add_executable(data_SoA scripts/data_SoA.cpp)
 target_link_libraries(data_SoA PRIVATE flashbev_core CUDA::cudart)
 
 # ==========================================
-# 可执行文件 2：空间索引化独立测试 (D2)
+# 可执行文件 2：空间索引化独立测试
 # ==========================================
 add_executable(spatial_hash scripts/spatial_hash.cpp)
 target_link_libraries(spatial_hash PRIVATE flashbev_core CUDA::cudart)
 
 # ==========================================
-# 可执行文件 3：地面滤波独立测试 (D3)
+# 可执行文件 3：地面滤波独立测试
 # ==========================================
 add_executable(ground_filter scripts/ground_filter.cpp)
 target_link_libraries(ground_filter PRIVATE flashbev_core CUDA::cudart)
+
+# ==========================================
+# 可执行文件 4：占据网格更新独立测试
+# ==========================================
+add_executable(occupancy scripts/occupancy.cpp)
+target_link_libraries(occupancy PRIVATE flashbev_core CUDA::cudart)
 
 # ==========================================
 # 可执行文件 5：主线任务 (FlashBEV 实时感知系统)
