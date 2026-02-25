@@ -34,6 +34,9 @@ target_compile_options(flashbev_core PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:-O3 -use_fast_math -lineinfo>
 )
 
+add_executable(gpuinfo tools/gpuinfo.cpp)
+target_link_libraries(gpuinfo PRIVATE flashbev_core CUDA::cudart)
+
 # ==========================================
 # 可执行文件 1：小工具 (AoS to SoA 独立验证)
 # ==========================================

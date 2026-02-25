@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
     }
 
     try {
-        std::cout << "[*] FlashBEV Pipeline D1-D4 启动...\n";
+        std::cout << "[*] FlashBEV Pipeline...\n";
 
         // =====================================================================
         // 1. 资源分配
@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
         std::vector<float> host_grid(TOTAL_GRIDS);
         CHECK_CUDA(cudaMemcpy(host_grid.data(), d_occupancy_grid.ptr, TOTAL_GRIDS * sizeof(float), cudaMemcpyDeviceToHost));
 
-        std::cout << "\n>>> [D4 验证] 占用栅格数据分析 (Log-Odds)\n";
+        std::cout << "\n>>> 数据验证：占用栅格数据分析 (Log-Odds)\n";
         
         int occupied_count = 0;
         int free_count = 0;

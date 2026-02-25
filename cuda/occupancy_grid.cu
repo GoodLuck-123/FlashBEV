@@ -28,11 +28,11 @@ __global__ void UpdateOccupancyKernel(
     if (v_idx < 0) return;
 
     // 3. 查表决定更新值
-    // 技巧：避免 if-else 分支指令，使用三目运算符，编译器可优化为选择指令 (CSEL)
+    // 避免 if-else 分支指令，使用三目运算符，编译器可优化为选择指令 (CSEL)
     float update_val = (is_obstacle[idx] == 1) ? LO_HIT : LO_MISS;
 
     // 4. 原子累加
-    // 注意：这里是性能热点。RTX 5080 的 L2 Cache 原子单元吞吐量很高，
+    // 5080 的 L2 Cache 原子单元吞吐量很高，
     // 但如果有大量地面点集中在同一个网格（如脚下），会有 Serialization（串行化）压力。
     // (D5阶段可以使用 Shared Memory 聚合来优化这里)
     atomicAdd(&occupancy_grid[v_idx], update_val);
