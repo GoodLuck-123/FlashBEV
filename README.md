@@ -1,6 +1,7 @@
 # FlashBEV: High-Performance CUDA LiDAR-to-BEV Perception Map
 
 FlashBEV 是一个基于纯 C++17 与 CUDA 驱动开发的轻量级、高性能激光雷达至鸟瞰图（LiDAR-to-BEV）占用栅格系统。本项目剥离了冗长的深度学习框架与庞杂的外部依赖，专注于底层显存级优化、时空同步映射与极致的并行计算吞吐率，适用于对计算延迟有严格要求的机器人与自动驾驶感知模块。
+每一个核心功能都在./script/目录下写了main函数并加到CMakeLists中生成可执行文件来测试功能
 
 ## 1 数据准备与布局转换 (Data Preparation & Memory Layout)
 
@@ -31,6 +32,12 @@ FlashBEV 的核心管线完全在 GPU 端异步执行，避免 CPU-GPU 间的显
 ![04](./picture/04.png)
 
   引入逻辑概率更新机制。针对多点云并发落入同一 BEV 栅格的物理现象，严格使用 `atomicAdd` 指令处理显存写入冲突，确保栅格状态计数的原子性与准确性。
+  
+  下面是激光雷达点云分了地面（白点）与障碍物（红点）与未知（灰色）的BEV热力图，因工程中未加入时序更新，所以很多点都是未知
+  并且所用数据集为R3Live，且以手持采集，故三种不同的点云划分地不是很明显
+
+![05](./picture/a000000.png)
+![06](./picture/a001856.png)
 
 ## 3 CUDA 底层优化策略 (Performance Tuning)
 
@@ -57,3 +64,22 @@ FlashBEV 的核心管线完全在 GPU 端异步执行，避免 CPU-GPU 间的显
 mkdir build && cd build
 cmake ..
 make -j$(nproc)
+
+**测试脚本命令:**
+* 处理数据格式
+```cpp
+// 注意本项目采用R3Live数据集，利用./tools/bag2AoS.py提前处理成AoS数据格式
+// 以AoS的bin文件模拟驱动吐出来的每帧点云
+./data_SoA ../data_aos_bin/data.bin
+
+* 点云空间哈希索引化
+```cpp
+./spatial_hash ../data_aos_bin/data.bin
+
+* 点云地面滤波
+```cpp
+./ground_filter ../data_aos_bin/data.bin
+
+* BEV网格Occ
+```cpp
+./occupancy ../data_aos_bin/data.bin
