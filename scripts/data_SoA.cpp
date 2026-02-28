@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <cuda_runtime.h>
 #include "data_mover.h"
-#include "FB_utils.h"     // 统一的 CUDA 错误检查和 RAII 内存管理
+#include "FB_utils.h" // 统一的 CUDA 错误检查和 RAII 内存管理
 
 using namespace flashbev::utils;
 
@@ -64,7 +64,8 @@ int main(int argc, char **argv)
 
         // 打印 CPU 端的原始 AoS 数据 (交织的 1D 数组)
         std::cout << "--- 转换前 (AoS, CPU 内存直读) ---\n";
-        for (int k = 0; k < 2; ++k) {
+        for (int k = 0; k < 2; ++k)
+        {
             std::cout << "Point[" << k << "]: "
                       << "X=" << host_aos_data[k * 4 + 0] << ", "
                       << "Y=" << host_aos_data[k * 4 + 1] << ", "
@@ -81,7 +82,8 @@ int main(int argc, char **argv)
 
         // 打印 GPU 传回的 SoA 数据 (分离的 1D 数组)
         std::cout << "--- 转换后 (SoA, GPU 显存回抽) ---\n";
-        for (int k = 0; k < 2; ++k) {
+        for (int k = 0; k < 2; ++k)
+        {
             std::cout << "Point[" << k << "]: "
                       << "X=" << check_x[k] << ", "
                       << "Y=" << check_y[k] << ", "
@@ -97,7 +99,6 @@ int main(int argc, char **argv)
         // cudaFree(d_soa_y);
         // cudaFree(d_soa_z);
         // cudaFree(d_soa_i);
-
     }
     catch (const std::exception &e)
     {

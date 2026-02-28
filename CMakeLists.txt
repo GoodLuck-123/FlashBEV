@@ -62,7 +62,7 @@ add_executable(occupancy scripts/occupancy.cpp)
 target_link_libraries(occupancy PRIVATE flashbev_core CUDA::cudart)
 
 # ==========================================
-# 可执行文件 5：主线任务 (FlashBEV 实时感知系统)
+# 可执行文件 5：主线任务，是最终的全部暴力优化好的结果
 # ==========================================
 add_executable(flashbev src/main.cpp)
 target_link_libraries(flashbev PRIVATE flashbev_core CUDA::cudart)

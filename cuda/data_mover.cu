@@ -4,7 +4,7 @@
 #include <cuda_runtime.h>
 #include <iostream>
 #include <stdexcept>
-#include "FB_utils.h"     // 统一的 CUDA 错误检查和 RAII 内存管理
+#include "FB_utils.h" // 统一的 CUDA 错误检查和 RAII 内存管理
 
 namespace flashbev
 {
